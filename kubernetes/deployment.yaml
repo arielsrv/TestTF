@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rolling-update
+spec:
+  replicas: 1
+  revisionHistoryLimit: 1
+  selector:
+    matchLabels:
+      app: testtf
+  template:
+    metadata:
+      annotations:
+        prometheus.io/port: "8081"
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/metrics"
+      labels:
+        app: testtf
+    spec:
+      containers:
+        - ports:
+            - containerPort: 8081
+              name: http
+          name: testtf
+          image: testtf:latest
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "1024Mi"
+              cpu: "1000m"
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: config
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: http
+              scheme: HTTP
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: http
+              scheme: HTTP
+      restartPolicy: Always
+  strategy:
+    type: RollingUpdate

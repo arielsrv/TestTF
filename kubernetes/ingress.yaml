@@ -1,0 +1,15 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: ingress
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`testtf.127.0.0.1.nip.io`) && PathPrefix(`/`)
+      kind: Rule
+      services:
+        - name: testtf--service
+          port: http
+  tls:
+    secretName: testtf--secret

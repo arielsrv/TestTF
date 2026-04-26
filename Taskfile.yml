@@ -1,0 +1,115 @@
+version: '3'
+
+vars:
+  IMAGE_NAME: testtf
+  IMAGE_TAG: latest
+  PORT: "8081"
+  REGISTRY: ""   # e.g. ghcr.io/myorg or docker.io/myuser — leave empty for local
+
+tasks:
+  default:
+    desc: "List all available tasks"
+    cmds:
+      - task --list
+
+  # ── Docker ────────────────────────────────────────────────────────────────
+
+  docker:build:
+    desc: "Build the Docker image (multi-stage, distroless)"
+    cmds:
+      - docker build -t {{.IMAGE_NAME}}:{{.IMAGE_TAG}} .
+
+  docker:tag:
+    desc: "Tag the image for the remote registry"
+    cmds:
+      - docker tag {{.IMAGE_NAME}}:{{.IMAGE_TAG}} {{.REGISTRY}}/{{.IMAGE_NAME}}:{{.IMAGE_TAG}}
+
+  docker:push:
+    desc: "Push the image to the registry (set REGISTRY var)"
+    cmds:
+      - task: docker:tag
+      - docker push {{.REGISTRY}}/{{.IMAGE_NAME}}:{{.IMAGE_TAG}}
+
+  docker:run:
+    desc: "Run the container on port {{.PORT}}"
+    cmds:
+      - docker run --rm -p {{.PORT}}:8081 --name {{.IMAGE_NAME}} {{.IMAGE_NAME}}:{{.IMAGE_TAG}}
+
+  docker:run:detached:
+    desc: "Run the container in the background"
+    cmds:
+      - docker run -d -p {{.PORT}}:8081 --name {{.IMAGE_NAME}} {{.IMAGE_NAME}}:{{.IMAGE_TAG}}
+
+  docker:stop:
+    desc: "Stop the container running in the background"
+    cmds:
+      - docker stop {{.IMAGE_NAME}}
+
+  docker:logs:
+    desc: "Stream container logs in real time"
+    cmds:
+      - docker logs -f {{.IMAGE_NAME}}
+
+  docker:clean:
+    desc: "Remove the local image"
+    cmds:
+      - docker rmi {{.IMAGE_NAME}}:{{.IMAGE_TAG}}
+
+  # ── Kubernetes ────────────────────────────────────────────────────────────
+
+  k8s:apply:
+    desc: "Apply all manifests via Kustomize (namespace: remitee)"
+    cmds:
+      - kubectl apply -k kubernetes/
+
+  k8s:delete:
+    desc: "Delete all resources defined in the Kustomize manifests"
+    cmds:
+      - kubectl delete -k kubernetes/
+
+  k8s:status:
+    desc: "Show rollout status of the deployment (namespace: remitee)"
+    cmds:
+      - kubectl rollout status deployment/testtf--rolling-update -n remitee
+
+  k8s:restart:
+    desc: "Trigger a rolling restart of the deployment"
+    cmds:
+      - kubectl rollout restart deployment/testtf--rolling-update -n remitee
+
+  k8s:logs:
+    desc: "Stream logs from running pods (namespace: remitee)"
+    cmds:
+      - kubectl logs -f -l app=testtf -n remitee
+
+  k8s:diff:
+    desc: "Preview changes without applying (kubectl diff)"
+    cmds:
+      - kubectl diff -k kubernetes/
+
+  # ── Full deploy pipeline ──────────────────────────────────────────────────
+
+  deploy:
+    desc: "Full pipeline: gradle build → docker build → push → k8s apply"
+    cmds:
+      - task: gradle:build
+      - task: docker:build
+      - task: docker:push
+      - task: k8s:apply
+
+  # ── Gradle ────────────────────────────────────────────────────────────────
+
+  gradle:build:
+    desc: "Compile the project with Gradle (skip tests)"
+    cmds:
+      - ./gradlew bootJar -x test
+
+  gradle:test:
+    desc: "Run the project tests"
+    cmds:
+      - ./gradlew test
+
+  gradle:updates:
+    desc: "Check for outdated dependencies"
+    cmds:
+      - ./gradlew dependencyUpdates
