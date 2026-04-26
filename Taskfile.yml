@@ -33,12 +33,12 @@ tasks:
   docker:run:
     desc: "Run the container on port {{.PORT}}"
     cmds:
-      - docker run --rm -p {{.PORT}}:{{.PORT}} -e SERVER_PORT={{.PORT}} --name {{.IMAGE_NAME}} {{.IMAGE_NAME}}:{{.IMAGE_TAG}}
+      - docker run --rm -p {{.PORT}}:{{.PORT}} -e APP_PORT={{.PORT}} -e APP_HOST=0.0.0.0 --name {{.IMAGE_NAME}} {{.IMAGE_NAME}}:{{.IMAGE_TAG}}
 
   docker:run:detached:
     desc: "Run the container in the background"
     cmds:
-      - docker run -d -p {{.PORT}}:{{.PORT}} -e SERVER_PORT={{.PORT}} --name {{.IMAGE_NAME}} {{.IMAGE_NAME}}:{{.IMAGE_TAG}}
+      - docker run -d -p {{.PORT}}:{{.PORT}} -e APP_PORT={{.PORT}} -e APP_HOST=0.0.0.0 --name {{.IMAGE_NAME}} {{.IMAGE_NAME}}:{{.IMAGE_TAG}}
 
   docker:stop:
     desc: "Stop the container running in the background"
