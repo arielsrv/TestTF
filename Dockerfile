@@ -25,6 +25,8 @@ RUN java -Djarmode=layertools -jar app.jar extract
 FROM gcr.io/distroless/java25-debian13
 WORKDIR /app
 
+ENV SERVER_PORT=8081
+
 # Copy Spring Boot layers in order (less-volatile first for caching)
 COPY --from=layers /app/dependencies/          ./
 COPY --from=layers /app/spring-boot-loader/    ./
