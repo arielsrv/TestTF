@@ -19,6 +19,32 @@ repositories {
     mavenCentral()
 }
 
+class MockitoAgentArgumentProvider implements CommandLineArgumentProvider {
+    private final FileCollection classpath
+
+    MockitoAgentArgumentProvider(FileCollection classpath) {
+        this.classpath = classpath
+    }
+
+    @Classpath
+    FileCollection getClasspath() {
+        classpath
+    }
+
+    @Override
+    Iterable<String> asArguments() {
+        ["-javaagent:${classpath.singleFile.absolutePath}".toString()]
+    }
+}
+
+configurations {
+    mockitoAgent {
+        canBeConsumed = false
+        canBeResolved = true
+        transitive = false
+    }
+}
+
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.boot:spring-boot-starter-opentelemetry'
@@ -37,6 +63,7 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-testcontainers'
     testImplementation 'org.testcontainers:testcontainers-grafana'
     testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
+    mockitoAgent 'org.mockito:mockito-core'
     testCompileOnly 'org.projectlombok:lombok'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testAnnotationProcessor 'org.projectlombok:lombok'
@@ -44,6 +71,7 @@ dependencies {
 
 tasks.named('test', Test) {
     useJUnitPlatform()
+    jvmArgumentProviders.add(new MockitoAgentArgumentProvider(configurations.mockitoAgent))
 }
 
 def isNonStable = { String version ->
