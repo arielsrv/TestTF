@@ -19,7 +19,8 @@ RUN ./gradlew bootJar --no-daemon -x test
 FROM eclipse-temurin:25-jdk-noble AS layers
 WORKDIR /app
 COPY --from=builder /app/build/libs/*.jar app.jar
-RUN java -Djarmode=tools -jar app.jar extract --layers --launcher
+RUN java -Djarmode=tools -jar app.jar extract --layers --launcher \
+    && mkdir -p dependencies spring-boot-loader snapshot-dependencies application
 
 # ---- Runtime stage (distroless) ----
 FROM gcr.io/distroless/java25-debian13
